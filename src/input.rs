@@ -49,7 +49,7 @@ fn handle_input_system(
 
     if let Ok((mut orientation, mut distance)) = query.get_single_mut() {
         orientation.add_assign(-delta);
-        distance.add_assign(scroll);
+        distance.add_assign(-scroll);
     }
 }
 
