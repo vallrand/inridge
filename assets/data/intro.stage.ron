@@ -1,0 +1,33 @@
+StageBlueprint(
+    economy: GlobalEconomy(
+        density: [1, 1, 2, 5],
+    ),
+    strategy: StrategySettings(
+        low_matter_threshold: 4,
+    ),
+    areas: [
+        AreaBlueprint(
+            seed: 2023,
+            center: (0.0, 0.0, 0.0),
+            resolution: 3,
+            variants: [0.4,0.6,0.8,1.0],
+            noise_frequency: 0.05,
+            noise_octaves: 4,
+        )
+    ],
+    units: [
+        UnitPlacement(key: "vessel", area: 0, tile: 118, agent: Player),
+        UnitPlacement(key: "vessel", area: 0, tile: 101, agent: AI(1)),
+        UnitPlacement(key: "extractor", area: 0, tile: 117, agent: Player),
+        UnitPlacement(key: "extractor", area: 0, tile: 12, agent: Player),
+        UnitPlacement(key: "factory", area: 0, tile: 119, agent: Player),
+        UnitPlacement(key: "factory", area: 0, tile: 115, agent: Player),
+
+        UnitPlacement(key: "extractor", area: 0, tile: 83, agent: AI(1)),
+        UnitPlacement(key: "bastion", area: 0, tile: 86, agent: AI(1)),
+        UnitPlacement(key: "pulsar", area: 0, tile: 86, agent: AI(1)),
+        UnitPlacement(key: "bastion", area: 0, tile: 85, agent: AI(1)),
+        UnitPlacement(key: "stinger", area: 0, tile: 85, agent: AI(1)),
+
+    ]
+)

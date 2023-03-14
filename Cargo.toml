@@ -4,15 +4,27 @@ version = "0.1.0"
 edition = "2021"
 resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-bevy = { version = "0.9.1", features = [] }
+bevy = { version = "0.10.1", default-features = false, features = [
+    "animation", "bevy_animation", "bevy_asset", "bevy_audio", "bevy_core_pipeline", "bevy_gilrs", "bevy_gltf",
+    "bevy_pbr", "bevy_render", "bevy_scene", "bevy_sprite", "bevy_text", "bevy_ui", "bevy_winit",
+    "hdr", "ktx2", "zstd", "png", "tonemapping_luts", "vorbis",
+    "serialize", "mp3"
+] }
+bevy_hanabi = { version = "0.6", default-features = false, features = [ "3d" ] }
+serde_ron = { version = "0.8", package = "ron" }
+serde = { version = "1" }
 
 [profile.dev]
 opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 [profile.release]
+codegen-units = 1
 strip = "debuginfo"
 lto = "thin"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"

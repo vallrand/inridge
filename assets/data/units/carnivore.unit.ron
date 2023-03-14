@@ -1,0 +1,28 @@
+UnitBlueprint(
+    key: "carnivore",
+    description: "",
+
+    predecessor: Some("bastion"),
+    model: "carnivore",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(Trigger("carnivore_open")),
+    movement: None,
+    velocity: Velocity(6),
+    action: Some(Relocate),
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Consumption(
+        MatterConsumption(quota: 5)
+    )),
+    upgrade: None,
+    unit: None,
+    military: Some(Connection(
+        radius: (0.0, 3.0),
+        limit: 1,
+        damage: 1,
+        rate: 1.0,
+        degrade: Some(Immobilize(DegradeImmobilize(16))),
+    )),
+)

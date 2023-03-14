@@ -1,0 +1,29 @@
+UnitBlueprint(
+    key: "locust",
+    description: "",
+
+    predecessor: Some("-"),
+    model: "locust",
+    scale: 0.5,
+    radius: BoundingRadius(0.2),
+    animation: Some(Movement("locust_move")),
+    movement: Some(Staggered(
+        global_velocity: 4,
+        min_distance: 0.2,
+        velocity: 0.5,
+        angular_velocity: 4.0,
+    )),
+    velocity: Velocity(4),
+    action: None,
+
+    construction: UnderConstruction(required: 5),
+    integrity: Integrity(max: 2, rate: 0),
+    matter: None,
+    upgrade: None,
+    unit: None,
+    military: Some(Impact(
+        radius: (0.1, 1.0),
+        area: 0.2,
+        damage: 1,
+    )),
+)

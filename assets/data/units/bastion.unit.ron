@@ -1,0 +1,20 @@
+UnitBlueprint(
+    key: "bastion",
+    description: "",
+
+    predecessor: None,
+    model: "bastion",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(HexMovement("bastion_move_0", "bastion_move_1", "bastion_move_2")),
+    movement: None,
+    velocity: Velocity(6),
+    action: Some(Relocate),
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: None,
+    upgrade: None,
+    unit: None,
+    military: None,
+)

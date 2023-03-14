@@ -1,0 +1,30 @@
+UnitBlueprint(
+    key: "stinger",
+    description: "",
+
+    predecessor: Some("bastion"),
+    model: "stinger_base",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: None,
+    movement: None,
+    velocity: Velocity(6),
+    action: Some(Relocate),
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Consumption(
+        MatterConsumption(quota: 4)
+    )),
+    upgrade: None,
+    unit: None,
+    military: Some(Trajectory(
+        key: "stinger",
+        axis: None,
+        radius: (0.5, 4.0),
+        cooldown: 1.0,
+        vertical_limit: -1.0,
+        angular_limit: 1.2,
+        damage: 2,
+    )),
+)

@@ -1,67 +1,45 @@
-use bevy::{
-    prelude::*,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}
-};
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![allow(dead_code)]
 
 mod common;
-mod systems;
-mod input;
+mod extensions;
+
+mod logic;
+mod interaction;
+mod interface;
+mod effects;
+mod scene;
+mod materials;
+
+use bevy::prelude::*;
+use bevy_hanabi::prelude::*;
 
 fn main() {
     App::new()
-    .add_plugins(DefaultPlugins)
-    .add_plugin(LogDiagnosticsPlugin::default())
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
+    .insert_resource(Msaa::Off)
+    .insert_resource(ClearColor(Color::DARK_GRAY))
+    .add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "[Inridge]".to_string(), 
+            resolution: (1280., 720.).into(),
+            ..Default::default()
+        }), ..Default::default()
+    }))
+    .add_plugin(HanabiPlugin)
+
+    .add_plugin(common::noise::NoiseShaderPlugin)
+    .add_plugin(materials::MaterialEffectPlugin)
+    .add_plugin(common::animation::AnimationPlugin)
     
-    .add_plugin(common::gizmo::GizmosPlugin)
     .add_plugin(common::spline::SplinePlugin)
-    .add_plugin(input::InputManagerPlugin)
     .add_plugin(common::rig::ManipulatorTransformPlugin)
+    .add_plugin(common::loader::LoaderPlugin)
+    .add_plugin(common::raycast::RaycastPlugin)
 
-
-    .add_startup_system(setup)
-
-    .add_startup_system(systems::level::setup_level_system)
-    .add_system(systems::level::update_level_system)
+    .add_plugin(logic::LogicPlugin)
+    .add_plugin(interaction::InteractionPlugin)
+    .add_plugin(interface::InterfacePlugin)
+    .add_plugin(effects::EffectsPlugin)
+    .add_plugin(scene::DemoPlugin)
     .run();
-}
-
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        ..default()
-    });
-
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..default()
-    });
-
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
-
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    })
-    .insert(common::rig::OrbitManipulatorBundle{
-        look: common::rig::LookTransform{ target: Vec3::new(0.0, 0.0, 0.0) },
-        distance: common::rig::DistanceConstraint{ distance: 5.0, ..default() },
-        ..default()
-    });
 }

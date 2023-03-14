@@ -1,0 +1,22 @@
+UnitBlueprint(
+    key: "extractor",
+    description: "Extract materials from beneath the crust.",
+
+    predecessor: None,
+    model: "extractor",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(Idle("extractor_idle")),
+    movement: None,
+    velocity: Velocity(0),
+    action: None,
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Production(
+        MatterProduction(efficiency: 10)
+    )),
+    upgrade: None,
+    unit: None,
+    military: None,
+)

@@ -1,0 +1,25 @@
+UnitBlueprint(
+    key: "pulsar",
+    description: "",
+
+    predecessor: Some("bastion"),
+    model: "pulsar",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(Idle("pulsar_idle")),
+    movement: None,
+    velocity: Velocity(6),
+    action: Some(Relocate),
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Consumption(
+        MatterConsumption(quota: 5)
+    )),
+    upgrade: None,
+    unit: None,
+    military: Some(Area(
+        radius: (0.0, 2.0),
+        degrade: Some(Immobilize(DegradeImmobilize(4))),
+    )),
+)

@@ -1,0 +1,28 @@
+UnitBlueprint(
+    key: "capacitor II",
+    description: "Storage III",
+
+    predecessor: Some("capacitor I"),
+    model: "capacitor_ii",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: None,
+    movement: None,
+    velocity: Velocity(0),
+    action: None,
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 30, rate: 10),
+    matter: Some(Collection(
+        MatterStorage(
+            key: "bar_mesh",
+            capacity: 300,
+            stored: 0,
+            recharge: 1,
+            discharge: 1,
+        )
+    )),
+    upgrade: None,
+    unit: None,
+    military: None,
+)

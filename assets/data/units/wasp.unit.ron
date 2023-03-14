@@ -1,0 +1,38 @@
+UnitBlueprint(
+    key: "wasp",
+    description: "",
+
+    predecessor: Some("-"),
+    model: "wasp",
+    scale: 0.5,
+    radius: BoundingRadius(0.2),
+    animation: Some(Movement("wasp_move")),
+    movement: Some(Float(
+        height: 0.2,
+        frequency: 2.0,
+        velocity: 2.0,
+        deviation: 0.2,
+        ease: InOut(Power(3))
+    )),
+    velocity: Velocity(6),
+    action: None,
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 0),
+    matter: None,
+    upgrade: None,
+    unit: None,
+    military: Some(Trajectory(
+        key: "stinger",
+        axis: Some(Mat3(
+            0.0, 0.0,-1.0,
+            1.0, 0.0, 0.0,
+            0.0,-1.0, 0.0,
+        )),
+        radius: (0.0, 2.0),
+        cooldown: 4.0,
+        vertical_limit: -4.0,
+        angular_limit: 1.2,
+        damage: 1,
+    )),
+)

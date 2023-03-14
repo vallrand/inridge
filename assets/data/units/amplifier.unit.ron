@@ -1,0 +1,25 @@
+UnitBlueprint(
+    key: "amplifier",
+    description: "",
+
+    predecessor: Some("conductor"),
+    model: "amplifier",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(Idle("amplifier_idle")),
+    movement: None,
+    velocity: Velocity(0),
+    action: None,
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Consumption(
+        MatterConsumption(quota: 2)
+    )),
+    upgrade: Some(UpgradeDistribution(
+        range: 1,
+        effect: Amplitude(UpgradeAmplitude(1))
+    )),
+    unit: None,
+    military: None,
+)

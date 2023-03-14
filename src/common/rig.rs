@@ -1,28 +1,45 @@
 use bevy::prelude::*;
+use std::ops::{AddAssign, Range};
 
 ///Rotation as three axis angles. <https://en.wikipedia.org/wiki/Aircraft_principal_axes>
 #[derive(Component, Clone, Copy)]
-pub struct OrientationTransform {
-    pub yaw: f32,
-    pub pitch: f32,
-    pub roll: f32,
-    pub pitch_range: (f32, f32)
+pub enum OrientationTransform {
+    YawPitchRoll {
+        yaw: f32,
+        pitch: f32,
+        roll: f32,
+        pitch_range: (f32, f32),
+    },
+    Free(Quat)
 }
-impl std::ops::AddAssign<Vec2> for OrientationTransform {
-    fn add_assign(&mut self, rhs: Vec2) {
-        self.yaw += rhs.x;
-		self.pitch += rhs.y;
-        self.pitch = self.pitch.clamp(self.pitch_range.0, self.pitch_range.1);
+impl OrientationTransform {
+    pub fn apply_constraits(&mut self){
+        match self {
+            OrientationTransform::YawPitchRoll { pitch, pitch_range, .. } => {
+                let clamped_pitch = *pitch;
+                *pitch = clamped_pitch.clamp(pitch_range.0, pitch_range.1);
+            },
+            _ => {}
+        }
     }
 }
+
 impl From<&OrientationTransform> for Quat {
-    fn from(val: &OrientationTransform) -> Self {
-        Quat::from_axis_angle(Vec3::Y, val.yaw) * Quat::from_axis_angle(Vec3::X, val.pitch)
+    fn from(value: &OrientationTransform) -> Self {
+        match value {
+            &OrientationTransform::YawPitchRoll { yaw, pitch, roll, .. } => {
+                let mut rotation = Quat::from_axis_angle(Vec3::Y, yaw) *
+                Quat::from_axis_angle(Vec3::X, pitch);
+                if roll != 0.0 { rotation *= Quat::from_axis_angle(Vec3::Z, roll); }
+                rotation
+            },
+            &OrientationTransform::Free(rotation) => rotation
+        }
     }
 }
 impl Default for OrientationTransform {
-    fn default() -> Self { Self {
-        yaw: 0.0, pitch: 0.0, roll: 0.0,
+    fn default() -> Self { Self::YawPitchRoll {
+        yaw: 0.0, pitch: 0.1, roll: 0.0,
         pitch_range: (0.0 + 0.1, std::f32::consts::PI - 0.1)
     } }
 }
@@ -36,19 +53,19 @@ impl Default for LookTransform {
     fn default() -> Self { Self { target: Vec3::ZERO } }
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Default)]
 pub struct DistanceConstraint {
     pub distance: f32,
     pub range: (f32, f32)
 }
-impl std::ops::AddAssign<f32> for DistanceConstraint {
+impl AddAssign<f32> for DistanceConstraint {
     fn add_assign(&mut self, rhs: f32) {
         self.distance += rhs;
         self.distance = self.distance.clamp(self.range.0, self.range.1);
     }
 }
-impl Default for DistanceConstraint {
-    fn default() -> Self { Self { distance: 0.0, range: (0.0, 100.0) } }
+impl From<Range<f32>> for DistanceConstraint {
+    fn from(value: Range<f32>) -> Self { Self { range: (value.start, value.end), distance: value.start } }
 }
 
 fn update_free_transform_system(
@@ -73,8 +90,8 @@ fn update_orbit_transform_system(
 ) {
     for (mut transform, orientation, lookat, distance) in query.iter_mut() {
         let rotation = Quat::from(orientation);
-        transform.translation = (rotation * Vec3::Y) * distance.distance + lookat.target;
-        transform.look_at(lookat.target, Vec3::Y);
+        transform.rotation = rotation;
+        transform.translation = (rotation * Vec3::Z) * distance.distance + lookat.target;
     }
 }
 

@@ -1,11 +1,15 @@
+use std::ops::Range;
 use bevy::prelude::*;
 
 #[derive(Clone, Default, Component)]
 pub struct Spline<T> {
     pub nodes: Vec<T>,
     pub resolution: usize,
-    dirty: bool,
+    pub dirty: bool,
     arclengths: Vec<f32>
+}
+impl<T> From<Vec<T>> for Spline<T> {
+    fn from(nodes: Vec<T>) -> Self { Self { resolution: 1, dirty: true, arclengths: Vec::with_capacity(nodes.len()), nodes } }
 }
 
 pub enum ControlVariant {
@@ -35,6 +39,13 @@ impl<T> std::ops::DerefMut for Spline<T> {
 
 impl Spline<ControlPoint> {
     pub fn length(&self) -> f32 { *self.arclengths.last().unwrap_or(&0.0) }
+    pub fn with_resolution(mut self, resolution: usize) -> Self { self.resolution = resolution; self }
+    pub fn from_positions(positions: &[Vec3], resolution: usize) -> Self { Self {
+        nodes: positions.iter().map(|&position|
+            ControlPoint{ position, ..Default::default() }
+        ).collect(),
+        resolution, dirty: true, arclengths: Vec::new()
+    } }
     pub fn new(nodes: Vec<ControlPoint>, resolution: usize) -> Self {
         Self { nodes, resolution, dirty: true, arclengths: Vec::new() }
     }
@@ -62,8 +73,8 @@ impl Spline<ControlPoint> {
             }
         };
 
-        let translation = crate::common::ease::cubic_bezier(c0, c1, c2, c3, fraction);
-        let tangent = crate::common::ease::cubic_bezier_derivative(c0, c1, c2, c3, fraction).normalize();
+        let translation = crate::common::animation::ease::cubic_bezier(c0, c1, c2, c3, fraction);
+        let tangent = crate::common::animation::ease::cubic_bezier_derivative(c0, c1, c2, c3, fraction).normalize();
         
         let roll = prev.roll + (next.roll - prev.roll) * fraction;
         let binormal = Vec3::cross(tangent, Quat::from_axis_angle(Vec3::Z, roll) * Vec3::Y).normalize();
@@ -75,6 +86,7 @@ impl Spline<ControlPoint> {
         Transform{ translation, rotation, scale: Vec3::new(scale.x, scale.y, 1.0) }
     }
     pub fn recalculate_length(&mut self){
+        if !self.dirty { return; }
         let samples = self.resolution * (self.nodes.len() - 1) + 1;
         self.arclengths.resize(samples, default());
 
@@ -106,19 +118,24 @@ impl Spline<ControlPoint> {
             index -= 1;
         }
         let l0 = self.arclengths[index];
-        self.nodes.len() as f32 *
-        (index as f32 + (length - l0) / (self.arclengths[index + 1] - l0)) / self.arclengths.len() as f32
+        (index as f32 + (length - l0) / (self.arclengths[index + 1] - l0)) *
+        (self.nodes.len() - 1) as f32 / (self.arclengths.len() - 1) as f32
     }
 }
 
 #[derive(Clone, Default, Component)]
 pub struct MeshDeformation {
-    pub limit: u16,
+    pub range: Option<Range<f32>>,
     pub offset: f32,
-    vertices: Vec<(f32,Vec3,Vec3)>
+    pub stretch: bool,
+    pub handle: Option<Handle<Mesh>>,
+    vertices: Vec<(f32,Vec3,Vec3)>,
 }
-impl From<&Mesh> for MeshDeformation {
-    fn from(mesh: &Mesh) -> Self {
+
+impl MeshDeformation {
+    pub fn with_range(mut self, stretch: bool, range: Range<f32>) -> Self { self.stretch = stretch; self.range = Some(range); self }
+    pub fn with_offset(mut self, offset: f32) -> Self { self.offset = offset; self }
+    pub fn cache_mesh(&mut self, mesh: &Mesh){
         let aabb = mesh.compute_aabb().unwrap();
 
         let attribute_position = mesh.attribute(Mesh::ATTRIBUTE_POSITION).unwrap();
@@ -142,19 +159,19 @@ impl From<&Mesh> for MeshDeformation {
             vertices.push((distance, position, normal));
         }
 
-        Self { limit: 1, offset: 0.0, vertices }
+        self.vertices = vertices;
     }
-}
-
-impl MeshDeformation {
     pub fn apply(&self, spline: &Spline<ControlPoint>, mesh: &mut Mesh){
-        let mut positions: Vec<Vec3> = Vec::with_capacity(self.vertices.len());
-        let mut normals: Vec<Vec3> = Vec::with_capacity(self.vertices.len());
-        for (distance, position, normal) in self.vertices.iter() {
-            let transform = spline.sample(spline.normalize(*distance));
+        let mut positions: Vec<[f32;3]> = Vec::with_capacity(self.vertices.len());
+        let mut normals: Vec<[f32;3]> = Vec::with_capacity(self.vertices.len());
+        let segments = spline.nodes.len() as f32 - 1.0;
+        for &(distance, position, normal) in self.vertices.iter() {
+            let mut height: f32 = self.offset * segments + if self.stretch { spline.normalize(distance) }else{ distance };
+            if let Some(range) = self.range.as_ref() { height = height.clamp(range.start * segments, range.end * segments); }
+            let transform = spline.sample(height);
 
-            positions.push(transform.transform_point(position.clone()));
-            normals.push((transform.rotation * normal.clone()).normalize());
+            positions.push(transform.transform_point(position).to_array());
+            normals.push((transform.rotation * normal).normalize().to_array());
         }
 
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
@@ -164,23 +181,45 @@ impl MeshDeformation {
 
 fn update_spline_system(
     mut meshes: ResMut<Assets<Mesh>>,
-    mut query: Query<(&mut Handle<Mesh>, &mut MeshDeformation, &mut Spline<ControlPoint>), Changed<Spline<ControlPoint>>>
+    mut query: Query<(&Handle<Mesh>, &mut MeshDeformation, &mut Spline<ControlPoint>), Or<(Changed<Spline<ControlPoint>>, Changed<MeshDeformation>)>>
 ){
-    for (mut handle, mut deform, mut spline) in query.iter_mut() {
+    for (handle, mut deform, mut spline) in query.iter_mut() {
         if deform.vertices.is_empty() {
-            deform.clone_from(&MeshDeformation::from(meshes.get(&handle).unwrap()));
+            let original_handle = deform.handle.get_or_insert(handle.clone());
+            let Some(mesh) = meshes.get(&original_handle) else { continue };
+            deform.cache_mesh(mesh);
         }
-        
-        spline.recalculate_length();
-
-        let mesh = meshes.get_mut(&handle).unwrap();
+        if spline.is_changed() { spline.recalculate_length(); }
+        let Some(mesh) = meshes.get_mut(&handle) else { continue };
         deform.apply(&spline, mesh);
     }
 }
 
-pub struct SplinePlugin;
-impl Plugin for SplinePlugin {
+pub struct SplinePlugin; impl Plugin for SplinePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update_spline_system);
+        app.add_system(update_spline_system.in_base_set(CoreSet::PostUpdate));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test] pub fn sample_normalized_spline(){
+        for length in 2..8 {
+            let control_points: Vec<ControlPoint> = (0..length)
+            .map(|i|ControlPoint{
+                position: Vec3::ZERO.lerp(Vec3::X, i as f32 / (length - 1) as f32),
+                variant: ControlVariant::Tension(0.0),
+                ..Default::default() })
+            .collect();
+            let mut spline = Spline::new(control_points, 16);
+            spline.recalculate_length();
+            assert_eq!(spline.nodes.len(), length);
+            assert_eq!(spline.length(), 1.0);
+            assert_eq!(spline.normalize(0.0), 0.0);
+            assert_eq!(spline.sample(0.0).translation, Vec3::ZERO);
+            assert_eq!(spline.sample(length as f32 - 1.0).translation, Vec3::X);
+            assert_eq!(spline.normalize(1.0), length as f32 - 1.0);
+        }
     }
 }

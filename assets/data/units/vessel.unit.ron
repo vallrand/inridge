@@ -1,0 +1,30 @@
+UnitBlueprint(
+    key: "vessel",
+    description: "",
+
+    predecessor: Some("-"),
+    model: "vessel",
+    scale: 1.0,
+    radius: BoundingRadius(0.5),
+    animation: Some(Trigger("vessel_open")),
+    movement: Some(Probe(
+        height: 0.2,
+    )),
+    velocity: Velocity(8),
+    action: None,
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Collection(
+        MatterStorage(
+            key: "bar_mesh",
+            capacity: 100,
+            stored: 100,
+            recharge: 0,
+            discharge: 1,
+        )
+    )),
+    upgrade: None,
+    unit: None,
+    military: None,
+)

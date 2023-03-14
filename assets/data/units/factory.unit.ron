@@ -1,0 +1,26 @@
+UnitBlueprint(
+    key: "factory",
+    description: "",
+
+    predecessor: None,
+    model: "factory",
+    scale: 1.0,
+    radius: BoundingRadius(1.0),
+    animation: Some(Trigger("factory_open")),
+    movement: None,
+    velocity: Velocity(0),
+    action: Some(OpenGate),
+
+    construction: UnderConstruction(required: 10),
+    integrity: Integrity(max: 10, rate: 10),
+    matter: Some(Consumption(
+        MatterConsumption(quota: 5)
+    )),
+    upgrade: None,
+    unit: Some(UnitFabrication(
+        key: "vessel",
+        batch: 1,
+        group: 2,
+    )),
+    military: None,
+)
