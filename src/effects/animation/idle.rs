@@ -3,9 +3,10 @@ use bevy::scene::SceneInstance;
 use crate::common::loader::AssetBundle;
 use crate::scene::{ModelAssetBundle, UnitBlueprint};
 use crate::logic::UnderConstruction;
-use super::{UnitAnimation, AnimationState};
+use super::{UnitAnimation, AnimationState, AnimationEvent};
 
 pub fn play_unit_animation(
+    mut events: EventWriter<AnimationEvent>,
     model_bundle: Res<AssetBundle<ModelAssetBundle>>,
     query: Query<(&Parent, &Children, &UnitAnimation), With<SceneInstance>>,
     query_unit: Query<Ref<AnimationState>, (With<Handle<UnitBlueprint>>, Without<UnderConstruction>)>,
@@ -43,13 +44,17 @@ pub fn play_unit_animation(
                     let Ok(mut player) = query_animation.get_mut(entity) else { continue };
                     let elapsed = player.elapsed();
                     if reverse && elapsed > 0.0 {
+                        events.send(AnimationEvent::Trigger(parent.get(), reverse, elapsed));
                         player.play(handle.clone_weak())
                             .set_elapsed(elapsed.min(animation.duration()) - animation.duration()).set_speed(-1.0);
                     } else if !reverse && elapsed == 0.0 {
+                        events.send(AnimationEvent::Trigger(parent.get(), reverse, 0.0));
                         player.play(handle.clone_weak()).set_speed(1.0);
                     } else if !reverse && elapsed <= 0.0 {
+                        let elapsed = (elapsed + animation.duration()).max(0.0);
+                        events.send(AnimationEvent::Trigger(parent.get(), reverse, elapsed));
                         player.play(handle.clone_weak())
-                            .set_elapsed((elapsed + animation.duration()).max(0.0)).set_speed(1.0);
+                            .set_elapsed(elapsed).set_speed(1.0);
                     }
                 }
             },

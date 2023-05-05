@@ -23,6 +23,6 @@ UnitBlueprint(
         limit: 1,
         damage: 1,
         rate: 1.0,
-        degrade: Some(Immobilize(DegradeImmobilize(16))),
+        degrade: Some(Immobilize(DegradeImmobilize(36))),
     )),
 )

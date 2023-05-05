@@ -1,19 +1,23 @@
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
+use bevy_kira_audio::prelude::*;
 use std::f32::consts::FRAC_PI_2;
 use crate::common::loader::AssetBundle;
-use crate::common::animation::ease::{Ease, SimpleCurve};
+use crate::common::animation::ease::{Ease, SimpleCurve, lerp};
 use crate::common::animation::{AnimationTimeline, Animator, Track, TransformScale};
 use crate::materials::ColorUniform;
-use crate::scene::EffectAssetBundle;
+use crate::scene::{EffectAssetBundle, AudioAssetBundle};
 use crate::logic::{ImpactEffect};
 
 pub fn animate_impact_effect(
+    time: Res<Time>,
     mut commands: Commands,
+    audio: Res<Audio>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     effect_bundle: Res<AssetBundle<EffectAssetBundle>>,
-    query: Query<(&ImpactEffect, &GlobalTransform), Added<ImpactEffect>>
+    query: Query<(Entity, &ImpactEffect, &GlobalTransform), Added<ImpactEffect>>
 ){
-    for (effect, transform) in query.iter() {
+    for (entity, effect, transform) in query.iter() {
         let ImpactEffect::Area { radius, .. } = effect else { continue };
 
         commands.spawn(SpatialBundle::from_transform(
@@ -21,7 +25,13 @@ pub fn animate_impact_effect(
             .with_scale(Vec3::splat(*radius))
         ))
         .insert(AnimationTimeline::default().with_cleanup(1.0))
+        .insert(AudioEmitter{instances:vec![
+            audio.play(audio_bundle.explosion_acid.clone())
+            .with_playback_rate(lerp(0.9, 1.1, time.elapsed_seconds().fract()) as f64)
+            .handle()
+        ]})
         .with_children(|parent|{
+
             parent.spawn(ParticleEffectBundle {
                 effect: ParticleEffect::new(effect_bundle.particle_hit.clone()),
                 ..Default::default()

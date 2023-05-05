@@ -23,7 +23,9 @@ pub fn update_grid_tile_highlight(
     ) = query_grid.get_single() else { return };
 
     if let Some(entity) = previous_selection.take() {
-        commands.entity(entity).insert(SelectionState::None);
+        if let Some(mut commands) = commands.get_entity(entity) {
+            commands.insert(SelectionState::None);
+        }
     }
 
     let hover = commands.spawn((
@@ -75,7 +77,9 @@ pub fn update_grid_group_highlight(
     if previous_selection.map(|(_,prev_hash)|prev_hash == hash).unwrap_or(false) { return; }
 
     if let Some((entity,_)) = previous_selection.take() {
-        commands.entity(entity).insert(SelectionState::None);
+        if let Some(mut commands) = commands.get_entity(entity) {
+            commands.insert(SelectionState::None);
+        }
     }
 
     let Some(group) = group else { return };

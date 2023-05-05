@@ -18,6 +18,7 @@ StageBlueprint(
     units: [
         UnitPlacement(key: "vessel", area: 0, tile: 118, agent: Player),
         UnitPlacement(key: "vessel", area: 0, tile: 101, agent: AI(1)),
+        
         UnitPlacement(key: "extractor", area: 0, tile: 117, agent: Player),
         UnitPlacement(key: "extractor", area: 0, tile: 12, agent: Player),
         UnitPlacement(key: "factory", area: 0, tile: 119, agent: Player),
@@ -25,9 +26,8 @@ StageBlueprint(
 
         UnitPlacement(key: "extractor", area: 0, tile: 83, agent: AI(1)),
         UnitPlacement(key: "bastion", area: 0, tile: 86, agent: AI(1)),
-        UnitPlacement(key: "pulsar", area: 0, tile: 86, agent: AI(1)),
         UnitPlacement(key: "bastion", area: 0, tile: 85, agent: AI(1)),
-        UnitPlacement(key: "stinger", area: 0, tile: 85, agent: AI(1)),
+        UnitPlacement(key: "carnivore", area: 0, tile: 85, agent: AI(1)),
 
     ]
 )

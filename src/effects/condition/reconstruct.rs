@@ -1,13 +1,17 @@
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
+use crate::common::loader::AssetBundle;
 use crate::common::geometry::merge_meshes;
 use crate::effects::outline::BorderOutline;
 use crate::logic::{UnderConstruction,MapGrid,GridTileIndex};
 use crate::materials::ReconstructEffectMaterial;
+use crate::scene::AudioAssetBundle;
 
 #[derive(Component, Clone)]
 pub enum StructureCondition {
     Construction {
         intensity: f32,
+        prev_intensity: f32,
         effect: Entity,
         material: Handle<ReconstructEffectMaterial>,
     }
@@ -15,6 +19,8 @@ pub enum StructureCondition {
 
 pub fn animate_reconstruction(
     time: Res<Time>,
+    audio: Res<Audio>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     mut commands: Commands,
     mut materials: ResMut<Assets<ReconstructEffectMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -29,7 +35,8 @@ pub fn animate_reconstruction(
         let tile = &grid.tiles[tile_index.0];
 
         match (construction, condition.as_deref_mut()) {
-            (None, Some(StructureCondition::Construction { effect, material, intensity })) => {
+            (None, Some(StructureCondition::Construction { effect, material, intensity, prev_intensity })) => {
+                *prev_intensity = *intensity;
                 *intensity = (*intensity - time.delta_seconds() / outro_duration).min(1.0);
                 materials.get_mut(material).unwrap().threshold = *intensity;
 
@@ -39,7 +46,13 @@ pub fn animate_reconstruction(
                     commands.entity(entity).remove::<StructureCondition>();
                 }
             },
-            (Some(_), Some(StructureCondition::Construction { material, intensity, .. })) => {
+            (Some(_), Some(StructureCondition::Construction { material, intensity, prev_intensity, .. })) => {
+                if *intensity <= *prev_intensity && *intensity < 1.0 {
+                    commands.entity(entity).insert(AudioEmitter{instances:vec![
+                        audio.play(audio_bundle.construct.clone()).handle()
+                    ]});
+                }
+                *prev_intensity = *intensity;
                 *intensity = (*intensity + time.delta_seconds() / intro_duration).min(1.0);
                 materials.get_mut(material).unwrap().threshold = *intensity;
             },
@@ -64,7 +77,7 @@ pub fn animate_reconstruction(
                     bevy::pbr::NotShadowReceiver,
                 )).set_parent(parent.get()).id();
 
-                commands.entity(entity).insert(StructureCondition::Construction{ effect: effect_entity, material, intensity: 0.0 });
+                commands.entity(entity).insert(StructureCondition::Construction{ effect: effect_entity, material, intensity: 0.0, prev_intensity: 0.0 });
             },
             (_, _) => {}
         }

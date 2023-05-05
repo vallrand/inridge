@@ -44,7 +44,9 @@ pub fn link_structures(
             transform.scale = Vec3::new(1.0, fraction, fraction) * connector.scale;
         }
         if connector.timer.just_finished() && connector.reverse {
-            commands.entity(connector.entity).despawn();
+            if let Some(mut commands) = commands.get_entity(connector.entity) {
+                commands.despawn();
+            }
         }
         !connector.timer.finished()
     });

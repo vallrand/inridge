@@ -6,7 +6,7 @@ use crate::logic::GroupLink;
 pub fn animate_unit_condition_suspended(
     time: Res<Time>,
     settings: Res<AnimationSettings>,
-    query_unit: Query<(Entity, Ref<AnimationState>), (With<GroupLink>, Changed<AnimationState>)>,
+    query_unit: Query<(Entity, Ref<AnimationState>), (With<GroupLink>, Or<(Changed<AnimationState>, Added<GroupLink>)>)>,
     children: Query<&Children>,
     mut query: Query<&mut ColorUniform, With<Handle<ModelEffectLayeredMaterial>>>,
     mut transitions: Local<Vec<(Entity, bool)>>

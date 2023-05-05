@@ -5,9 +5,27 @@ use crate::common::noise::{MurMurHash, WeightTable};
 use crate::common::adjacency::breadth_first_search;
 use crate::logic::{Agent, GridTileIndex, MapGrid, GroupLink, NetworkGroupList, EconomySummary};
 use crate::logic::{UnderConstruction, Suspended, MatterBinding, FabricationGate, UnitDirective};
-use crate::scene::{UnitBlueprint, BlueprintAssetBundle};
-use crate::interaction::{InteractionEvent, ActionSelector, path::ActionPath};
+use crate::scene::{UnitBlueprint, BlueprintAssetBundle, GlobalState};
+use crate::interaction::{InteractionEvent, ActionSelector, ViewMode, path::ActionPath};
 use crate::interface::construct::validate_construction;
+
+pub fn evaluate_end_condition(
+    query: Query<&Agent>,
+    mut mode: ResMut<ViewMode>,
+    mut next_state: ResMut<NextState<GlobalState>>,
+){
+    let mut mask: u8 = 0;
+    for agent in query.iter() {
+        mask |= match agent {
+            Agent::Player => 0x1,
+            &Agent::AI(agent_index) => 1 << agent_index
+        };
+    }
+    if mask == 0x1 || mask & 0x1 == 0 {
+        next_state.set(GlobalState::Menu);
+        *mode = ViewMode::Menu;
+    }
+}
 
 pub struct HeuristicContext {
     any_construction: bool,
@@ -48,8 +66,9 @@ impl Heuristic {
             None => 0
         };
         let prev_delta = summary.matter_production - summary.matter_consumption;
+        let prev_storage = summary.matter_reservation + prev_delta;
         let next_delta = prev_delta + delta;
-        if context.any_construction || prev_delta <= 0 || next_delta < 0 {
+        if context.any_construction || prev_delta <= 0 && prev_storage <= 0 || next_delta < 0 {
             Heuristic::Disabled
         } else {
             let military = 2 * (blueprint.military.is_some() as i32) +

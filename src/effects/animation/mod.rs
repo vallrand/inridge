@@ -19,6 +19,13 @@ pub enum UnitAnimation {
     HexMovement(String, String, String),
 }
 
+#[derive(Clone, PartialEq)]
+pub enum AnimationEvent {
+    Trigger(Entity, bool, f32),
+    Toggle(Entity, bool),
+}
+
+
 #[derive(Resource)]
 pub struct AnimationSettings {
     pub bridge_transition_duration: f32,

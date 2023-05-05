@@ -81,12 +81,14 @@ pub fn animate_construction(
             match query_mesh.get(entity) {
                 Ok((Some(handle), None)) => {
                     if handle.id() == effect.prev_model_handle.id() {
-                        commands.entity(entity).insert(effect.model_handle.clone());
+                        commands.entity(entity).insert(effect.model_handle.clone())
+                        .insert((bevy::pbr::NotShadowCaster,bevy::pbr::NotShadowReceiver));
                     }
                 },
                 Ok((None, Some(handle))) => {
                     if handle.id() == effect.prev_glass_handle.id() {
-                        commands.entity(entity).insert(effect.glass_handle.clone());
+                        commands.entity(entity).insert(effect.glass_handle.clone())
+                        .insert((bevy::pbr::NotShadowCaster,bevy::pbr::NotShadowReceiver));
                     }
                 },
                 _ => continue
@@ -107,12 +109,14 @@ pub fn animate_construction(
             match query_mesh.get(entity) {
                 Ok((Some(handle), None)) => {
                     if handle.id() == effect.model_handle.id() {
-                        commands.entity(entity).insert(effect.prev_model_handle.clone());
+                        commands.entity(entity).insert(effect.prev_model_handle.clone())
+                        .remove::<(bevy::pbr::NotShadowCaster,bevy::pbr::NotShadowReceiver)>();
                     }
                 },
                 Ok((None, Some(handle))) => {
                     if handle.id() == effect.glass_handle.id() {
-                        commands.entity(entity).insert(effect.prev_glass_handle.clone());
+                        commands.entity(entity).insert(effect.prev_glass_handle.clone())
+                        .remove::<(bevy::pbr::NotShadowCaster,bevy::pbr::NotShadowReceiver)>();
                     }
                 },
                 _ => continue

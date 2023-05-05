@@ -1,16 +1,20 @@
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
+use bevy_kira_audio::prelude::*;
 use std::f32::consts::FRAC_PI_2;
 use crate::common::loader::AssetBundle;
 use crate::common::animation::{Animator, Track, TransformScale, AnimationTimeline};
 use crate::common::animation::ease::{Ease, SimpleCurve, lerp};
 use crate::materials::{ColorUniform, ModelEffectLayeredMaterial};
-use crate::scene::{EffectAssetBundle, UnitBlueprint};
+use crate::scene::{EffectAssetBundle, UnitBlueprint, AudioAssetBundle};
 use crate::logic::{Integrity, CombatEvent, SourceLink};
 
 pub fn animate_destruction(
+    time: Res<Time>,
     mut events: EventReader<CombatEvent>,
     mut commands: Commands,
+    audio: Res<Audio>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     effect_bundle: Res<AssetBundle<EffectAssetBundle>>,
     query_unit: Query<(&mut Transform, &GlobalTransform, Option<&SourceLink>)>,
     children: Query<&Children>,
@@ -33,6 +37,12 @@ pub fn animate_destruction(
         if source.is_some() { continue; }
         commands.spawn(SpatialBundle::from_transform(Transform::from_matrix(transform.compute_matrix())))
         .insert(AnimationTimeline::default().with_cleanup(2.4))
+        .insert(AudioEmitter{instances:vec![
+            audio.play(audio_bundle.explosion_fire.clone())
+            .with_playback_rate(lerp(0.9, 1.1, time.elapsed_seconds().fract()) as f64)
+            .with_volume(1.0)
+            .handle()
+        ]})
         .with_children(|parent|{
             parent.spawn((
                 SpatialBundle::from_transform(Transform::default()
@@ -40,6 +50,8 @@ pub fn animate_destruction(
                     .with_translation(Vec3::new(0.0, 0.25, 0.0))),
                 effect_bundle.mesh_quad.clone(),
                 effect_bundle.material_wave.clone(),
+                bevy::pbr::NotShadowCaster,
+                bevy::pbr::NotShadowReceiver,
                 ColorUniform::from(Color::WHITE),
                 Animator::<TransformScale>::new().add(Track::from_frames(vec![
                     (Vec3::ZERO.into(), 0.0, Ease::Linear),
@@ -60,6 +72,8 @@ pub fn animate_destruction(
                 ),
                 effect_bundle.mesh_quad.clone(),
                 effect_bundle.material_explosion_fire.clone(),
+                bevy::pbr::NotShadowCaster,
+                bevy::pbr::NotShadowReceiver,
                 ColorUniform::from(Color::NONE),
                 Animator::<ColorUniform>::new().add(Track::from_frames(vec![
                     (Color::NONE.into(), 0.0, Ease::Linear),
@@ -72,6 +86,8 @@ pub fn animate_destruction(
                 effect_bundle.mesh_sphere.clone(),
                 effect_bundle.material_fresnel.clone(),
                 ColorUniform::from(Color::WHITE),
+                bevy::pbr::NotShadowCaster,
+                bevy::pbr::NotShadowReceiver,
                 Animator::<TransformScale>::new().add(Track::from_frames(vec![
                     (Vec3::ZERO.into(), 0.0, Ease::Linear),
                     (Vec3::splat(3.0).into(), 0.5, Ease::Out(SimpleCurve::Power(3))),

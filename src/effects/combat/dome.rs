@@ -1,10 +1,11 @@
-use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
+use std::f32::consts::FRAC_PI_2;
 use crate::common::loader::AssetBundle;
 use crate::common::animation::ease::{Ease, SimpleCurve};
 use crate::logic::{GroupLink, MilitaryBinding, MilitarySupply};
 use crate::materials::{HairBall, ColorUniform};
-use crate::scene::EffectAssetBundle;
+use crate::scene::{EffectAssetBundle, AudioAssetBundle};
 
 #[derive(Component, Clone)]
 pub struct DomeEffect {
@@ -12,6 +13,7 @@ pub struct DomeEffect {
     pub barrier: Entity,
     pub lightning: Entity,
     pub intensity: f32,
+    pub audio: Handle<AudioInstance>,
 
     pub intro_duration: f32,
     pub outro_duration: f32,
@@ -20,6 +22,9 @@ pub struct DomeEffect {
 
 pub fn animate_dome_effect(
     time: Res<Time>,
+    audio: Res<Audio>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     mut commands: Commands,
     mut query_unit: ParamSet<(
         Query<(Entity, Option<&mut DomeEffect>, &MilitaryBinding, &MilitarySupply, &GlobalTransform), With<GroupLink>>,
@@ -41,6 +46,9 @@ pub fn animate_dome_effect(
         }
 
         if effect.intensity <= 0.0 {
+            if let Some(instance) = audio_instances.get_mut(&effect.audio) {
+                instance.stop(AudioTween::linear(std::time::Duration::from_secs_f32(0.5)));
+            }
             commands.entity(effect.entity).despawn_recursive();
             commands.entity(entity).remove::<DomeEffect>();
         }
@@ -66,11 +74,21 @@ pub fn animate_dome_effect(
             continue;
         }
 
+        let audio_handle = audio.play(audio_bundle.pulsar.clone()).looped()
+        .with_volume(0.5)
+        .loop_from(0.05)
+        .fade_in(AudioTween::new(std::time::Duration::from_secs_f32(0.5), AudioEasing::OutPowi(2)))
+        .handle();
+
         let effect = commands.spawn(
             SpatialBundle::from_transform(Transform::from_matrix(transform.compute_matrix())
             .with_translation(transform.transform_point(Vec3::Y))
             .with_scale(Vec3::splat(2.0 * radius))
-        )).id();
+        ))
+        .insert(AudioEmitter{instances:vec![
+            audio_handle.clone()
+        ]})
+        .id();
         let lightning = commands.spawn(MaterialMeshBundle {
             mesh: meshes.add(HairBall {
                 seed: time.elapsed().subsec_nanos(), radius: 0.5, width: 0.1, quantity: 16, hemisphere: false
@@ -98,6 +116,7 @@ pub fn animate_dome_effect(
         commands.entity(entity).insert(DomeEffect {
             entity: effect,
             lightning, barrier,
+            audio: audio_handle,
             intensity: 0.0,
             ease: Ease::Out(SimpleCurve::Circular),
             intro_duration: 1.0, outro_duration: 0.2,

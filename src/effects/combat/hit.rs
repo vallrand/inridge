@@ -1,18 +1,22 @@
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
+use bevy_kira_audio::prelude::*;
 use std::f32::consts::FRAC_PI_2;
 use crate::common::loader::AssetBundle;
-use crate::common::animation::ease::{Ease, SimpleCurve};
+use crate::common::animation::ease::{Ease, SimpleCurve, lerp};
 use crate::common::animation::{AnimationTimeline, Animator, Track, TransformScale};
 use crate::materials::ColorUniform;
 use crate::logic::{CombatEvent, BoundingRadius};
-use crate::scene::EffectAssetBundle;
+use crate::scene::{EffectAssetBundle, AudioAssetBundle};
 
 pub fn animate_hit_effect(
+    time: Res<Time>,
     mut commands: Commands,
     mut events: EventReader<CombatEvent>,
-    query_unit: Query<&GlobalTransform, With<BoundingRadius>>,
+    audio: Res<Audio>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     effect_bundle: Res<AssetBundle<EffectAssetBundle>>,
+    query_unit: Query<&GlobalTransform, With<BoundingRadius>>,
 ){
     for event in events.iter() {
 
@@ -22,7 +26,13 @@ pub fn animate_hit_effect(
         commands.spawn((
             SpatialBundle::from_transform(Transform::from_matrix(transform.compute_matrix())),
             AnimationTimeline::default().with_cleanup(1.0),
-        )).with_children(|parent|{
+        ))
+        .insert(AudioEmitter{instances:vec![
+            audio.play(audio_bundle.hit_impact.clone())
+            .with_playback_rate(lerp(0.9, 1.1, time.elapsed_seconds().fract()) as f64)
+            .handle()
+        ]})
+        .with_children(|parent|{
             parent.spawn(ParticleEffectBundle {
                 effect: ParticleEffect::new(effect_bundle.particle_hit.clone()),
                 ..Default::default()

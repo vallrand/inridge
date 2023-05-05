@@ -12,7 +12,6 @@ mod terrain;
 mod strategy;
 
 pub use agent::*;
-use bevy::time::common_conditions::on_timer;
 pub use group::*;
 pub use event::*;
 
@@ -29,6 +28,7 @@ pub use strategy::*;
 
 use bevy::prelude::*;
 use bevy::time::fixed_timestep::run_fixed_update_schedule;
+use bevy::time::common_conditions::on_timer;
 use crate::common::loader::LoadingState;
 use crate::scene::GlobalState;
 
@@ -76,6 +76,7 @@ pub struct LogicPlugin; impl Plugin for LogicPlugin {
         ).chain().in_set(LogicSet::PreFixedUpdate).in_schedule(CoreSchedule::FixedUpdate));
 
         app.add_systems((
+            strategy::evaluate_end_condition,
             economy::reset_economy_phase,
             economy::production_phase,
             economy::reservation_phase,

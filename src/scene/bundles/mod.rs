@@ -4,3 +4,4 @@ pub mod effects;
 pub mod environment;
 pub mod interface;
 pub mod models;
+pub mod audio;

@@ -3,8 +3,10 @@ pub mod outline;
 pub mod combat;
 pub mod condition;
 pub mod linker;
+pub mod audio;
 
 use bevy::prelude::*;
+use bevy::time::common_conditions::on_timer;
 use crate::common::loader::LoadingState;
 use crate::extensions::cache_scene_entity_lookup_table;
 use crate::logic::LogicSet;
@@ -14,9 +16,16 @@ pub struct EffectsPlugin; impl Plugin for EffectsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<animation::AnimationSettings>();
         app.init_resource::<condition::MembershipSettings>();
+        app.add_event::<animation::AnimationEvent>();
         app.add_system(condition::setup_membership_materials.in_schedule(OnEnter(LoadingState::Running)));
 
+        app.add_system(audio::cleanup_spatial_audio.in_base_set(CoreSet::PostUpdate)
+            .run_if(on_timer(std::time::Duration::from_secs_f32(1.0))));
+
         app.add_systems((
+            audio::trigger_sound_effect,
+            audio::movement_sound_effect,
+            
             animation::extract_unit_animation_trigger,
             animation::update_movement_formation,
             animation::play_unit_animation,

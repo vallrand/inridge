@@ -110,7 +110,7 @@ pub fn apply_combat_damage(
     mut events: EventWriter<CombatEvent>,
     mut query_unit: Query<&mut Integrity>,
     mut query_source: Query<&mut MilitaryBinding>,
-    query_supply: Query<&MilitarySupply>,
+    query_supply: Query<&MilitarySupply, With<GroupLink>>,
     mut query: ParamSet<(
         Query<(Entity, Option<&SourceLink>, &mut TrajectoryEffect), Without<ImpactEffect>>,
         Query<(Entity, &TargetLock, Option<&SourceLink>, &mut ImpactEffect, Option<&mut TrajectoryEffect>)>,
@@ -179,7 +179,7 @@ pub fn resupply_military_phase(
     query_unit: Query<(
         Entity, Option<&MilitarySupply>, Option<&MatterBinding>, Option<&UnderConstruction>, Option<&Suspended>,
         Option<&UpgradeAmplitude>, Option<&UpgradeFrequency>, Option<&UpgradeRange>,
-    ), With<MilitaryBinding>>
+    ), (With<MilitaryBinding>, With<GroupLink>)>
 ){
     for (
         entity, supply, matter, construction, suspended,
@@ -279,9 +279,9 @@ pub fn update_military_targeting(
                 )).normalize();
 
                 let angle = Quat::angle_between(*orientation, next_rotation);
-                if angle >= f32::EPSILON {
+                if angle >= 1e-3 {
                     let fraction = angle.min(*angular_limit * time.delta_seconds()) / angle;
-                    *orientation = Quat::slerp(*orientation, next_rotation, fraction);
+                    *orientation = Quat::slerp(*orientation, next_rotation, fraction.min(1.0));
                 } else {
                     cooldown_timer.reset();
                     cooldown_timer.set_duration(Duration::from_secs_f32(*cooldown * supply.rate_multiplier()));
@@ -311,7 +311,7 @@ pub fn update_military_targeting(
                 ) = query_next_target(&lookup, agent, transform, &query_target, radius.0, radius.1 * supply.range_multipler()) else { continue };
 
                 *released += 1;
-                let limb = commands.spawn((
+                commands.spawn((
                     SpatialBundle::from_transform(Transform::from_matrix(transform.compute_matrix())),
                     agent.clone(),
                     TargetLock(target_entity),
@@ -325,10 +325,7 @@ pub fn update_military_targeting(
                         interval: Timer::from_seconds(*rate * supply.rate_multiplier(), TimerMode::Repeating),
                         damage: *damage + supply.amplitude
                     }
-                )).id();
-                if let Some(effect) = degrade {
-                    effect.apply(commands.entity(limb));
-                }
+                ));
             },
             MilitaryBinding::Impact { radius, area, damage } => {
                 let Some((target_entity, _, target_transform)) = target_lock
@@ -354,7 +351,7 @@ pub fn update_military_targeting(
     }
 }
 
-use super::{MapGrid, GridTileIndex};
+use super::{MapGrid, GridTileIndex, GroupLink};
 use crate::common::adjacency::breadth_first_search;
 use crate::effects::animation::MovementFormation;
 
@@ -464,10 +461,14 @@ pub fn apply_degradation_effect(
 
 pub fn propagate_degradation_effect(
     mut commands: Commands,
-    query: Query<(&TargetLock, &ImpactEffect, &DegradeImmobilize, Option<&TrajectoryEffect>)>
+    query: Query<(&TargetLock, &SourceLink, Option<&TrajectoryEffect>), With<ImpactEffect>>,
+    query_source: Query<&MilitaryBinding, (With<MilitarySupply>, With<GroupLink>)>
 ){
-    for (target, impact, immobilize, trajectory) in query.iter() {
+    for (target, source, trajectory) in query.iter() {
         if trajectory.map_or(false, |trajectory|!trajectory.intro.finished()) { continue; }
-        commands.entity(**target).insert_add(immobilize.clone());
+        let Ok(MilitaryBinding::Connection { degrade, .. }) = query_source.get(source.0) else { continue };
+        let Some(degrade) = degrade else { continue };
+        let Some(commands) = commands.get_entity(**target) else { continue };
+        degrade.apply(commands);
     }
 }

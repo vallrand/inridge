@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::core_pipeline::prepass::DepthPrepass;
 use bevy::core_pipeline::clear_color::ClearColorConfig;
@@ -9,6 +10,8 @@ use crate::materials::displacement::DisplacementSettings;
 use super::camera::VirtualCamera;
 
 pub fn setup_scene(mut commands: Commands){
+    commands.insert_resource(SpacialAudio { max_distance: 15.0 });
+
     commands.spawn(Camera3dBundle {
         camera: Camera { order: 0, hdr: true, ..Default::default() },
         camera_3d: Camera3d {
@@ -32,6 +35,7 @@ pub fn setup_scene(mut commands: Commands){
         composite_mode: BloomCompositeMode::Additive,
         ..BloomSettings::NATURAL
     })
+    .insert(AudioReceiver)
     // .insert(bevy::ui::RelativeCursorPosition::default())
     .insert(raycast::RaycastSource::default())
     .insert(VirtualCamera {

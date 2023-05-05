@@ -13,4 +13,6 @@ pub enum InteractionEvent {
     Deconstruct(Entity),
     EnterMode(Option<ViewMode>),
     Execute(Entity, ActionSelector, u8),
+    Start(usize),
+    Exit,
 }

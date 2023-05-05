@@ -7,10 +7,8 @@ use crate::materials::SkyboxNebula;
 use crate::interaction::ViewMode;
 use crate::interaction::construct_structure;
 use super::lighting::setup_lighting;
-use super::GlobalState;
 
 pub fn load_stage(
-    mut next_state: ResMut<NextState<GlobalState>>,
     mut commands: Commands,
     mut construction_events: EventWriter<ConstructionEvent>,
     blueprints: Res<Assets<UnitBlueprint>>,
@@ -22,8 +20,6 @@ pub fn load_stage(
     mut mode: ResMut<ViewMode>,
     query_camera: Query<Entity, With<Camera3d>>,
 ){
-    next_state.set(GlobalState::Running);
-
     let next_stage = stages.get(&blueprint_bundle.intro_stage).unwrap();
     setup_lighting(&mut commands, next_stage);
     commands.insert_resource(next_stage.economy.clone());
@@ -62,5 +58,14 @@ pub fn load_stage(
             );
         }
         commands.entity(entity).insert(grid);
+    }
+}
+
+pub fn unload_stage(
+    mut commands: Commands,
+    query: Query<Entity, Or<(With<NetworkGroupList>, With<PointLight>)>>
+){
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }

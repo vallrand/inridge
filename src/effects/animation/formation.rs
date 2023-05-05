@@ -34,6 +34,7 @@ pub struct MovementFormation {
     pub prev_position: Vec3,
     pub next_position: Vec3,
     pub elapsed: f32,
+    pub last_reset: bool,
     pub variant: MovementVariant
 }
 impl MovementFormation {
@@ -42,6 +43,7 @@ impl MovementFormation {
         self.prev_normal = self.next_normal;
         self.prev_position = self.next_position;
         self.prev_direction = self.next_direction;
+        self.last_reset = true;
     }
     pub fn recalculate_direction(&mut self){
         self.next_direction = self.next_position - self.prev_position;
@@ -141,6 +143,7 @@ pub fn update_movement_formation(
     for (entity, parent, mut formation, movement, target_lock, immobilize) in query_unit.iter_mut() {
         let Ok((grid, parent_transform)) = query_grid.get(parent.get()) else { continue };
         let decelerate = immobilize.map_or(1.0, |immobilize| 1.0 / (1.0 + **immobilize as f32));
+        formation.last_reset = false;
 
         if formation.is_added() {
             let transform = query_adjacent.get_component::<Transform>(entity).unwrap();

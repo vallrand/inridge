@@ -3,6 +3,7 @@ pub use trigger::*;
 
 pub mod layout;
 pub mod shared;
+pub mod menu;
 pub mod construct;
 pub mod deconstruct;
 pub mod toggle;
@@ -32,5 +33,7 @@ pub struct InterfacePlugin; impl Plugin for InterfacePlugin {
             indicator::update_indicator_display,
         ).after(LogicSet::PostUpdate)
         .in_set(OnUpdate(LoadingState::Running)));
+
+        app.add_system(menu::update_menu_screen.in_set(OnUpdate(LoadingState::Running)));
     }
 }

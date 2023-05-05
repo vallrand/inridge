@@ -13,6 +13,7 @@ mod materials;
 
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
+use bevy_kira_audio::prelude::*;
 
 fn main() {
     App::new()
@@ -26,6 +27,7 @@ fn main() {
         }), ..Default::default()
     }))
     .add_plugin(HanabiPlugin)
+    .add_plugin(AudioPlugin)
 
     .add_plugin(common::noise::NoiseShaderPlugin)
     .add_plugin(materials::MaterialEffectPlugin)

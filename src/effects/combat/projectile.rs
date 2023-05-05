@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
 use crate::common::animation::ease::{lerp, Ease, SimpleCurve};
 use crate::common::animation::{AnimationTimeline, Animator, Track, TransformScale, TransformTranslation};
 use crate::common::loader::AssetBundle;
@@ -6,7 +7,7 @@ use crate::logic::CombatEvent;
 use crate::extensions::EntityLookupTable;
 use crate::logic::{MilitaryBinding,TrajectoryEffect};
 use crate::materials::{ProjectileTrailMaterial, StripeMesh, ColorUniform};
-use crate::scene::EffectAssetBundle;
+use crate::scene::{EffectAssetBundle, AudioAssetBundle};
 
 pub fn animate_projectile_effect(
     mut commands: Commands,
@@ -14,6 +15,8 @@ pub fn animate_projectile_effect(
     query_unit: Query<(Entity, &EntityLookupTable, &MilitaryBinding, &GlobalTransform), Changed<MilitaryBinding>>,
     query_transform: Query<(&Transform, &GlobalTransform)>,
 
+    audio: Res<Audio>,
+    audio_bundle: Res<AssetBundle<AudioAssetBundle>>,
     effect_bundle: Res<AssetBundle<EffectAssetBundle>>,
     mut materials: ResMut<Assets<ProjectileTrailMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -69,6 +72,9 @@ pub fn animate_projectile_effect(
         commands.spawn(SpatialBundle::from_transform(
             Transform::from_matrix(global_transform.compute_matrix().inverse() * origin_transform)
         )).insert(AnimationTimeline::default().with_cleanup(0.8))
+        .insert(AudioEmitter{instances:vec![
+            audio.play(audio_bundle.launch_projectile.clone()).handle()
+        ]})
         .with_children(|parent|{
             parent.spawn(MaterialMeshBundle {
                 mesh: effect_bundle.mesh_tube.clone(),

@@ -68,6 +68,7 @@ pub fn construct_structure(
 
 pub fn process_interaction_event(
     mut next_state: ResMut<NextState<GlobalState>>,
+    mut exit: EventWriter<bevy::app::AppExit>,
     mut commands: Commands,
     mut global: ResMut<GlobalEconomy>,
     mut mode: ResMut<ViewMode>,
@@ -155,6 +156,12 @@ pub fn process_interaction_event(
             InteractionEvent::EnterMode(None) => {
                 *mode = std::mem::take(&mut previous_mode);
                 next_state.set(GlobalState::from(mode.as_ref()));
+            },
+            InteractionEvent::Start(stage) => {
+                next_state.set(GlobalState::Running);
+            },
+            InteractionEvent::Exit => {
+                exit.send(bevy::app::AppExit);
             }
         }
     }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use super::{MapGrid, GridTileIndex, GroupLink, ConstructionEvent, Integrity, DegradeImmobilize};
+use super::{MapGrid, GridTileIndex, GroupLink, ConstructionEvent, Integrity, DegradeImmobilize, MilitarySupply};
 use crate::effects::animation::MovementFormation;
 
 #[derive(Component, serde::Deserialize, Deref, DerefMut, Clone, Default, Debug)]
@@ -16,6 +16,7 @@ pub struct FollowingPath {
     pub path: Vec<usize>,
     pub elapsed: f32,
     pub prev_elapsed: f32,
+    pub last_step: u32,
 }
 impl From<Vec<usize>> for FollowingPath {
     fn from(path: Vec<usize>) -> Self { Self { path, ..Default::default() } }
@@ -23,6 +24,7 @@ impl From<Vec<usize>> for FollowingPath {
 impl FollowingPath {
     pub fn update(&mut self, velocity: f32){
         self.prev_elapsed = self.elapsed;
+        self.last_step += 1;
         if velocity > 0.0 { self.elapsed += 1.0 / velocity; }
     }
     pub fn calculate_segment(&self, fraction: f32) -> (usize, usize, f32) {
@@ -39,7 +41,8 @@ impl FollowingPath {
         }
     }
     pub fn stepped_over(&self) -> bool { self.next() > self.prev() }
-    pub fn just_started(&self) -> bool { self.elapsed == 0.0 }
+    pub fn just_started(&self) -> bool { self.elapsed == 0.0 && self.prev_elapsed == 0.0 }
+    pub fn has_ended(&self) -> bool { self.next_index().is_none() }
     pub fn next_index(&self) -> Option<&usize> { self.path.get(self.next() + 1) }
     pub fn next(&self) -> usize { (self.elapsed.max(0.0) as usize).min(self.path.len() - 1) }
     pub fn prev(&self) -> usize { (self.prev_elapsed.max(0.0) as usize).min(self.path.len() - 1) }
@@ -53,6 +56,7 @@ pub fn execute_movement_directives(
         entity, mut movement, mut tile_index, velocity, immobilize
     ) in query_unit.iter_mut() {
         if movement.stepped_over() || movement.just_started() {
+            movement.last_step = 0;
             if let Some(&next_index) = movement.next_index() {
                 tile_index.0 = next_index;
             } else {
@@ -115,11 +119,12 @@ pub fn execute_structure_relocation(
     for (entity, parent, mut movement, mut tile_index, velocity) in query_unit.p0().iter_mut() {
         let Ok(mut grid) = query_grid.get_mut(parent.get()) else { continue };
         if movement.just_started() {
-            commands.entity(entity).remove::<GroupLink>();
+            commands.entity(entity).remove::<GroupLink>().remove::<MilitarySupply>();
             events.send(ConstructionEvent::Dismantle { entity, parent: parent.get(), index: **tile_index });
         }
 
         if movement.stepped_over() || movement.just_started() {
+            movement.last_step = 0;
             let step = movement.next();
             if step > 0 { grid.tiles[movement.path[step - 1]].clear(); }
 

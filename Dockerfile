@@ -20,7 +20,7 @@ RUN cargo build --release --target x86_64-pc-windows-gnu
 FROM builder as builder-wasm
 
 RUN cargo build --profile wasm-release --target wasm32-unknown-unknown
-RUN wasm-bindgen --out-dir ./output/ --target web ./target/
+RUN wasm-bindgen --out-dir ./output/ --target web ./target/wasm32-unknown-unknown/wasm-release/*.wasm
 
 FROM scratch as release-windows
 COPY --from=builder-windows /app/target/x86_64-pc-windows-gnu/release/*.exe .

@@ -24,7 +24,9 @@ pub fn update_grid_affected_highlight(
     if previous_selection.map(|(_,prev_hash)|prev_hash == hash).unwrap_or(false) { return; }
 
     if let Some((entity,_)) = previous_selection.take() {
-        commands.entity(entity).insert(SelectionState::None);
+        if let Some(mut commands) = commands.get_entity(entity) {
+            commands.insert(SelectionState::None);
+        }
     }
 
     let Some((parent, UpgradeDistribution { list, .. })) = selected else { return };

@@ -28,7 +28,9 @@ pub fn update_military_range(
     }
 
     if let Some(prev) = previous_selection.take() {
-        commands.entity(prev.1).insert(SelectionState::None);
+        if let Some(mut commands) = commands.get_entity(prev.1) {
+            commands.insert(SelectionState::None);
+        }
     }
 
     let Some((entity, military, supply, transform)) = selected else { return };
