@@ -147,6 +147,8 @@ pub fn apply_combat_damage(
                         integrity.apply_damage(*damage);
                         if interval.mode() == TimerMode::Once {
                             events.send(CombatEvent::ProjectileHit(entity, **target));
+                        } else {
+                            events.send(CombatEvent::Hit(**target));
                         }
                         if interval.mode() == TimerMode::Repeating { continue; }
                     }
@@ -164,6 +166,7 @@ pub fn apply_combat_damage(
                         let Ok(target_agent) = query_target.get_component::<Agent>(*entity) else { continue };
                         if target_agent.eq(agent) { continue; }
                         let Ok(mut integrity) = query_unit.get_mut(*entity) else { continue };
+                        events.send(CombatEvent::Hit(*entity));
                         integrity.apply_damage(*damage);
                     }
                 }

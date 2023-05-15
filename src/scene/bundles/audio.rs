@@ -3,7 +3,9 @@ use bevy_kira_audio::prelude::*;
 use crate::common::loader::{AssetBundleList, ScopedAssetServer};
 
 pub struct AudioAssetBundle {
-    pub theme: Handle<AudioSource>,
+    pub transition: std::time::Duration,
+    pub theme_ambience: Handle<AudioSource>,
+    pub theme_conflict: Handle<AudioSource>,
     pub open_gate: Handle<AudioSource>,
     pub vessel_deploy: Handle<AudioSource>,
     pub walker: Handle<AudioSource>,
@@ -21,7 +23,9 @@ pub struct AudioAssetBundle {
 }
 impl AssetBundleList for AudioAssetBundle {
     fn from_asset_server(asset_server: &ScopedAssetServer) -> Self { Self {
-        theme: asset_server.load("sounds/theme.mp3"),
+        transition: std::time::Duration::from_secs_f32(30.0),
+        theme_ambience: asset_server.load("sounds/theme_insector.mp3"),
+        theme_conflict: asset_server.load("sounds/theme_recline.mp3"),
         open_gate: asset_server.load("sounds/gate_open.mp3"),
         vessel_deploy: asset_server.load("sounds/deploy.mp3"),
         walker: asset_server.load("sounds/walk.mp3"),

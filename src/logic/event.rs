@@ -10,6 +10,7 @@ pub enum ConstructionEvent {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CombatEvent {
     Destruct(Entity),
+    Hit(Entity),
     ProjectileLaunch(Entity, Entity, Entity),
     ProjectileHit(Entity, Entity),
 }
